@@ -1,0 +1,45 @@
+name: Deploy Fair Ones Azure API
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AZURE_FUNCTIONAPP_NAME: fairones-live-api-smashbakk
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: api
+  NODE_VERSION: 22.x
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install API dependencies
+        working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        run: npm ci
+
+      - name: Test and build API
+        working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        run: npm test
+
+      - name: Remove development dependencies
+        working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        run: npm prune --omit=dev
+
+      - name: Deploy Azure Function App
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
