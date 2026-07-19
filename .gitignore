@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+credentials.json
+.env
+.env.*
+npm-debug.log*
