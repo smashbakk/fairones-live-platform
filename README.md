@@ -8,6 +8,7 @@ This reconstructed Expo project implements the approved combined UI direction:
 - pink/blue competitor presentation and event photography;
 - clean five-item native bottom navigation;
 - working live-room preview, voting, schedule, matchup details, competition submission preview, and official YouTube archive link.
+- native LiveKit viewer room backed by a secure Azure Functions token service.
 
 ## Run locally
 
@@ -16,4 +17,4 @@ npm install
 npm start
 ```
 
-The current live-room screen is an interactive frontend placeholder. Production streaming requires a secure backend-issued LiveKit token. See `STORE_READINESS.md` for the launch checklist.
+The iOS and Android development builds now connect to LiveKit through the server-issued token flow in `api/`. The web build retains the broadcast preview. Add your Azure and LiveKit settings by following `LIVEKIT_AZURE_SETUP.md`; secrets must never be placed in the Expo application.

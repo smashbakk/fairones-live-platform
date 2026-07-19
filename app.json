@@ -9,6 +9,17 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#070708",
     "newArchEnabled": true,
+    "plugins": [
+      [
+        "@livekit/react-native-expo-plugin",
+        {
+          "android": {
+            "audioType": "media"
+          }
+        }
+      ],
+      "@config-plugins/react-native-webrtc"
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",

@@ -15,6 +15,7 @@ import { AccountScreen, AdminScreen, FeaturedBattleScreen } from './src/screens/
 import { upcomingEvents } from './src/data/events';
 import { AppContent, defaultContent } from './src/content';
 import { colors } from './src/theme';
+import './src/livekitSetup';
 
 type UtilityScreen = 'featured' | 'account' | 'admin' | null;
 const CONTENT_STORAGE_KEY = '@fairones/admin-content-v2';
