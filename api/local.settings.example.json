@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "LIVEKIT_URL": "wss://YOUR-PROJECT.livekit.cloud",
+    "LIVEKIT_API_KEY": "replace-me",
+    "LIVEKIT_API_SECRET": "replace-me",
+    "LIVEKIT_ALLOWED_ROOMS": "fairones-main-event",
+    "LIVEKIT_TOKEN_TTL": "10m",
+    "FAIRONES_ALLOWED_ORIGIN": "http://localhost:8081",
+    "FAIRONES_ADMIN_KEY": "replace-with-a-long-random-secret"
+  }
+}

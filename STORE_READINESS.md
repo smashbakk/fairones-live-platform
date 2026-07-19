@@ -16,7 +16,7 @@
 2. Configure Apple Developer and App Store Connect agreements, app record, certificates, screenshots, age rating, privacy nutrition labels, and content-rights declarations.
 3. Configure Google Play Console app record, Data Safety, content rating, ads declaration, app access instructions, privacy policy, tester track, and production access.
 4. Add a real backend for accounts, moderation/reporting, blocking, event data, voting integrity, and account deletion.
-5. Connect production LiveKit through an authenticated server-generated token endpoint. Never ship a public sandbox token-server ID.
+5. Deploy and configure the included Azure Functions LiveKit token endpoint, then place it behind production monitoring and rate limiting. Never ship LiveKit or host secrets in the app.
 6. If tokens, subscriptions, tips, or Battle Pass purchases unlock digital content, use Apple In-App Purchase and Google Play Billing. Do not route digital purchases to Cash App, Apple Pay, or an external checkout inside the app.
 7. Obtain participant releases and licenses for every photo, stream, replay, logo, song, and event recording.
 8. Test camera/microphone denial, poor-network recovery, live moderation, account deletion, and reporting on physical iOS and Android devices.
