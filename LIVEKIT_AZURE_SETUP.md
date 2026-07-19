@@ -40,6 +40,15 @@ Deploy the `api` folder with the Azure Functions Core Tools or the VS Code Azure
 https://YOUR-FUNCTION-APP.azurewebsites.net/api/livekit/token
 ```
 
+For the current Fair Ones Azure resource, the expected endpoints are:
+
+```text
+https://fairones-live-api-smashbakk.azurewebsites.net/api/health
+https://fairones-live-api-smashbakk.azurewebsites.net/api/livekit/token
+```
+
+The repository includes `.github/workflows/deploy-azure-api.yml`. Before running it, download the Function App publish profile and save its complete contents in the GitHub Actions repository secret `AZURE_FUNCTIONAPP_PUBLISH_PROFILE`.
+
 ## 3. Configure the Expo application
 
 Copy `.env.example` to `.env` and set the deployed endpoint:
