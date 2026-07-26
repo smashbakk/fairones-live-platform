@@ -1,5 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
-import { AccessToken, TrackSource } from 'livekit-server-sdk';
+import { TrackSource } from '@livekit/protocol';
+import { AccessToken } from 'livekit-server-sdk';
 
 export type JoinRole = 'viewer' | 'speaker' | 'host';
 export type JoinRequest = { roomName?: unknown; displayName?: unknown; role?: unknown; speakerGrant?: unknown };
