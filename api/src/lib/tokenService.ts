@@ -1,5 +1,5 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
-import { AccessToken } from 'livekit-server-sdk';
+import { AccessToken, TrackSource } from 'livekit-server-sdk';
 
 export type JoinRole = 'viewer' | 'speaker' | 'host';
 export type JoinRequest = { roomName?: unknown; displayName?: unknown; role?: unknown; speakerGrant?: unknown };
@@ -68,6 +68,13 @@ export async function issueJoinCredentials(body: JoinRequest, adminKey: string |
   const identity = `${request.role}-${randomUUID()}`;
   const accessToken = new AccessToken(config.apiKey, config.apiSecret, { identity, name: request.displayName, ttl: config.tokenTtl, metadata: JSON.stringify({ role: request.role, platform: 'fairones-live' }) });
   const canPublish = request.role === 'host' || request.role === 'speaker';
-  accessToken.addGrant({ roomJoin: true, room: request.roomName, canSubscribe: true, canPublish, canPublishData: request.role === 'host', canPublishSources: request.role === 'speaker' ? ['microphone'] : undefined });
+  accessToken.addGrant({
+    roomJoin: true,
+    room: request.roomName,
+    canSubscribe: true,
+    canPublish,
+    canPublishData: request.role === 'host',
+    canPublishSources: request.role === 'speaker' ? [TrackSource.MICROPHONE] : undefined,
+  });
   return { serverUrl: config.serverUrl, participantToken: await accessToken.toJwt(), roomName: request.roomName, identity, expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() };
 }
