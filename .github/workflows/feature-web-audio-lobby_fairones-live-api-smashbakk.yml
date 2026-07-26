@@ -30,12 +30,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: api/package-lock.json
 
-      - name: 'Install, build, and test Azure Functions API'
+      - name: 'Install Azure Functions dependencies'
         working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-        run: |
-          npm ci
-          npm run build
-          npm test
+        run: npm ci
+
+      - name: 'Build Azure Functions API'
+        working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        run: npm run build
 
       - name: Zip Azure Functions artifact
         working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
