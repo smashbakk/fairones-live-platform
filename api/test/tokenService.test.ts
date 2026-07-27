@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import test from 'node:test';
-import { TrackSource } from 'livekit-server-sdk';
 import { authorizeHost, authorizeSpeaker, issueJoinCredentials, TokenRequestError, TokenServiceConfig, validateJoinRequest } from '../src/lib/tokenService';
 
 const speakerGrantSecret = 'speaker-grant-secret-for-tests';
@@ -71,5 +70,5 @@ test('verified speaker token can publish microphone only', async () => {
   assert.equal(claims.video.canSubscribe, true);
   assert.equal(claims.video.canPublish, true);
   assert.equal(claims.video.canPublishData, false);
-  assert.deepEqual(claims.video.canPublishSources, [TrackSource.MICROPHONE]);
+  assert.deepEqual(claims.video.canPublishSources, ['microphone']);
 });
