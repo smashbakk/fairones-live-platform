@@ -30,7 +30,18 @@ type IdentityPayload = {
 };
 
 export function loadInfobipConfig(environment: NodeJS.ProcessEnv = process.env): InfobipConfig {
-  const baseUrl = environment.INFOBIP_BASE_URL?.trim().replace(/\/+$/, '');
+  const configuredBaseUrl = environment.INFOBIP_BASE_URL?.trim();
+  let baseUrl = '';
+  if (configuredBaseUrl) {
+    try {
+      const parsed = new URL(configuredBaseUrl);
+      baseUrl = parsed.hostname === 'api.infobip.com' || parsed.hostname.endsWith('.api.infobip.com')
+        ? parsed.origin
+        : 'https://api.infobip.com';
+    } catch {
+      baseUrl = '';
+    }
+  }
   const apiKey = environment.INFOBIP_API_KEY?.trim();
   const applicationId = environment.INFOBIP_2FA_APPLICATION_ID?.trim();
   const messageId = environment.INFOBIP_2FA_MESSAGE_ID?.trim();
