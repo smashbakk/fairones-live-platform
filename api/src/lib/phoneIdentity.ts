@@ -34,7 +34,7 @@ export function loadInfobipConfig(environment: NodeJS.ProcessEnv = process.env):
   const apiKey = environment.INFOBIP_API_KEY?.trim();
   const applicationId = environment.INFOBIP_2FA_APPLICATION_ID?.trim();
   const messageId = environment.INFOBIP_2FA_MESSAGE_ID?.trim();
-  const signingSecret = environment.FAIRONES_PHONE_IDENTITY_SECRET?.trim();
+  const signingSecret = environment.FAIRONES_PHONE_IDENTITY_SECRET?.trim() || environment.FAIRONES_SPEAKER_GRANT_SECRET?.trim();
   if (!baseUrl || !apiKey || !applicationId || !messageId || !signingSecret) {
     throw new Error('Infobip phone verification configuration is incomplete.');
   }
