@@ -66,7 +66,7 @@ test('speaker is limited to the audio lobby', () => {
 
 test('verified speaker token can publish microphone only', async () => {
   const credentials = await issueJoinCredentials({ roomName: 'fairones-live-lobby', displayName: 'Subscriber', role: 'speaker', speakerGrant: makeSpeakerGrant() }, null, config);
-  const claims = JSON.parse(Buffer.from(credentials.participantToken.split('.')[1]!, 'base64url').toString()) as { video: { canSubscribe: boolean; canPublish: boolean; canPublishData: boolean; canPublishSources?: TrackSource[] } };
+  const claims = JSON.parse(Buffer.from(credentials.participantToken.split('.')[1]!, 'base64url').toString()) as { video: { canSubscribe: boolean; canPublish: boolean; canPublishData: boolean; canPublishSources?: string[] } };
   assert.equal(claims.video.canSubscribe, true);
   assert.equal(claims.video.canPublish, true);
   assert.equal(claims.video.canPublishData, false);
