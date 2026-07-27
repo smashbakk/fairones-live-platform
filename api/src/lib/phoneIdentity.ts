@@ -101,9 +101,27 @@ export async function sendVerificationCode(phone: string, displayName: string, c
       to: phone,
     }),
   });
-  const result = await response.json() as { pinId?: string; requestError?: { serviceException?: { text?: string } } };
+  const responseText = await response.text();
+  let result: {
+    pinId?: string;
+    message?: string;
+    description?: string;
+    requestError?: { serviceException?: { text?: string; messageId?: string } };
+  } = {};
+  try {
+    result = JSON.parse(responseText) as typeof result;
+  } catch {
+    // Preserve a safe fallback when the provider returns a non-JSON response.
+  }
   if (!response.ok || !result.pinId) {
-    throw new PhoneIdentityError(result.requestError?.serviceException?.text || 'Verification text could not be sent.', 502);
+    const providerMessage = result.requestError?.serviceException?.text
+      || result.requestError?.serviceException?.messageId
+      || result.message
+      || result.description;
+    throw new PhoneIdentityError(
+      providerMessage || `Infobip rejected the verification request (HTTP ${response.status}).`,
+      502,
+    );
   }
   const challenge = signToken({
     kind: 'phone-challenge',
