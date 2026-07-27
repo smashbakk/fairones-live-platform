@@ -2,10 +2,19 @@ import { createHmac } from 'node:crypto';
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 
 function corsHeaders(request: HttpRequest): Record<string, string> {
-  const origin = request.headers.get('origin');
-  const allowedOrigin = process.env.FAIRONES_ALLOWED_ORIGIN || '';
-  const headers: Record<string, string> = { 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Cache-Control': 'no-store', 'Content-Type': 'application/json', Vary: 'Origin' };
-  if (allowedOrigin && (!origin || origin === allowedOrigin)) headers['Access-Control-Allow-Origin'] = allowedOrigin;
+  const origin = request.headers.get('origin')?.trim() || '';
+  const allowedOrigins = (process.env.FAIRONES_ALLOWED_ORIGIN || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Cache-Control': 'no-store',
+    'Content-Type': 'application/json',
+    Vary: 'Origin',
+  };
+  if (origin && allowedOrigins.includes(origin)) headers['Access-Control-Allow-Origin'] = origin;
   return headers;
 }
 
