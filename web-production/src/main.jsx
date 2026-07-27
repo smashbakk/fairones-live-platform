@@ -3,20 +3,24 @@ import { createRoot } from 'react-dom/client';
 import { Room, RoomEvent } from 'livekit-client';
 import './styles.css';
 
-const LIVE_API = 'https://fairones-live-api-smashbakk.azurewebsites.net/api';
+const LIVE_API = 'https://fairones-live-api-smashbakk-d2gnbac8e9cjatag.eastus-01.azurewebsites.net/api';
 const GOOGLE_CLIENT_ID = '435559857587-4e9e9vo01keti8l25m9cfdhcu8r55h83.apps.googleusercontent.com';
 const EVENTS = [
   { category: 'RAP BATTLE', title: 'BADMAN vs FUFFIE', date: 'AUG 28, 2026 · 7:00 PM ET', image: '/fairones/home-main-event.jpg' },
   { category: 'CHESS MATCH', title: 'SMASH vs ???', date: 'AUG 28, 2026 · 5:00 PM ET', image: '/fairones/chess.png' },
 ];
+const DEFAULT_FEATURED = {
+  eyebrow: 'FAIRONES FEATURED ARTIST',
+  title: 'FEATURED ARTIST',
+  name: 'COMING SOON',
+  bio: 'FairOnes Live artist spotlights, releases, interviews, and featured content will appear here.',
+  imageUrl: 'https://faironeslive.com/fairones/logo.png',
+  primaryLabel: 'OPEN FAIRONES YOUTUBE',
+  primaryUrl: 'https://www.youtube.com/@FaironesLive',
+};
 
 function EventCard({ event, onOpen }) {
-  return (
-    <button className="event-card" onClick={() => onOpen(event)} aria-label={`Open ${event.title} details`}>
-      <img src={`https://faironeslive.com${event.image}`} alt="" />
-      <div><small>{event.category}</small><strong>{event.title}</strong><span>{event.date}</span></div><b>›</b>
-    </button>
-  );
+  return <button className="event-card" onClick={() => onOpen(event)} aria-label={`Open ${event.title} details`}><img src={`https://faironeslive.com${event.image}`} alt=""/><div><small>{event.category}</small><strong>{event.title}</strong><span>{event.date}</span></div><b>›</b></button>;
 }
 
 function AudioLobby() {
@@ -27,180 +31,38 @@ function AudioLobby() {
   const [micOn, setMicOn] = useState(false);
   const [count, setCount] = useState(0);
   const [status, setStatus] = useState('READY TO LISTEN');
-
-  async function connect(role = 'viewer', speakerGrant) {
-    setStatus('CONNECTING…');
-    const response = await fetch(`${LIVE_API}/livekit/token`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ roomName: 'fairones-live-lobby', displayName: name || 'FairOnes Listener', role, speakerGrant }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Unable to join lobby');
-
-    if (roomRef.current) await roomRef.current.disconnect();
-    const room = new Room();
-    roomRef.current = room;
-    const updateCount = () => setCount(room.remoteParticipants.size + 1);
-    room.on(RoomEvent.ParticipantConnected, updateCount);
-    room.on(RoomEvent.ParticipantDisconnected, updateCount);
-    await room.connect(data.serverUrl, data.participantToken);
-    updateCount();
-    setJoined(true);
-    setStatus(role === 'speaker' ? 'SUBSCRIBER MIC READY' : 'LISTENING LIVE');
-  }
-
-  async function joinListener() {
-    try { await connect('viewer'); } catch (error) { setStatus(error.message || 'Connection failed'); }
-  }
-
-  async function verifySubscription() {
-    try {
-      setStatus('VERIFYING YOUTUBE…');
-      if (!window.google?.accounts?.oauth2) throw new Error('Google verification is still loading. Try again.');
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/youtube.readonly',
-        callback: async (tokenResponse) => {
-          if (tokenResponse.error || !tokenResponse.access_token) { setStatus('YOUTUBE VERIFICATION CANCELLED'); return; }
-          const verifyResponse = await fetch(`${LIVE_API}/youtube/subscription`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ accessToken: tokenResponse.access_token }),
-          });
-          const result = await verifyResponse.json();
-          if (!verifyResponse.ok || !result.subscriber || !result.speakerGrant) {
-            setStatus('SUBSCRIPTION NOT VERIFIED · LISTEN ONLY');
-            return;
-          }
-          await connect('speaker', result.speakerGrant);
-          setVerified(true);
-          await roomRef.current?.localParticipant.setMicrophoneEnabled(true);
-          setMicOn(true);
-          setStatus('YOU’RE SPEAKING');
-        },
-      });
-      client.requestAccessToken({ prompt: 'consent' });
-    } catch (error) { setStatus(error.message || 'Verification failed'); }
-  }
-
-  async function toggleMic() {
-    const next = !micOn;
-    await roomRef.current?.localParticipant.setMicrophoneEnabled(next);
-    setMicOn(next);
-    setStatus(next ? 'YOU’RE SPEAKING' : 'MIC MUTED');
-  }
-
-  useEffect(() => () => { roomRef.current?.disconnect(); }, []);
-
-  return (
-    <section className="lobby-card">
-      <div className="lobby-top"><span><i className="live-dot" /> LIVE AUDIO LOBBY</span><b>{joined ? count : '—'} IN ROOM</b></div>
-      <div className="wave"><i/><i/><i/><i/><i/><i/><i/></div>
-      <h2>FAIRONES LOBBY</h2>
-      <p>Listen before the live broadcast. Verified FairOnesLive YouTube subscribers can unlock their microphone and speak.</p>
-      <input className="name-input" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} aria-label="Display name" />
-      {!joined && <button className="gold-button" onClick={joinListener}>JOIN AUDIO LOBBY</button>}
-      {joined && !verified && <button className="outline-button" onClick={verifySubscription}>VERIFY SUBSCRIPTION TO SPEAK</button>}
-      {verified && <button className={`mic-button ${micOn ? 'active' : ''}`} onClick={toggleMic}>🎙 {micOn ? 'MUTE MICROPHONE' : 'UNMUTE MICROPHONE'}</button>}
-      <small className="lobby-status">{status}</small>
-    </section>
-  );
+  async function connect(role='viewer',speakerGrant){setStatus('CONNECTING…');const response=await fetch(`${LIVE_API}/livekit/token`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({roomName:'fairones-live-lobby',displayName:name||'FairOnes Listener',role,speakerGrant})});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to join lobby');if(roomRef.current)await roomRef.current.disconnect();const room=new Room();roomRef.current=room;const updateCount=()=>setCount(room.remoteParticipants.size+1);room.on(RoomEvent.ParticipantConnected,updateCount);room.on(RoomEvent.ParticipantDisconnected,updateCount);await room.connect(data.serverUrl,data.participantToken);updateCount();setJoined(true);setStatus(role==='speaker'?'SUBSCRIBER MIC READY':'LISTENING LIVE')}
+  async function joinListener(){try{await connect('viewer')}catch(error){setStatus(error.message||'Connection failed')}}
+  async function verifySubscription(){try{setStatus('VERIFYING YOUTUBE…');if(!window.google?.accounts?.oauth2)throw new Error('Google verification is still loading. Try again.');const client=window.google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/youtube.readonly',callback:async(tokenResponse)=>{if(tokenResponse.error||!tokenResponse.access_token){setStatus('YOUTUBE VERIFICATION CANCELLED');return}const verifyResponse=await fetch(`${LIVE_API}/youtube/subscription`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({accessToken:tokenResponse.access_token})});const result=await verifyResponse.json();if(!verifyResponse.ok||!result.subscriber||!result.speakerGrant){setStatus('SUBSCRIPTION NOT VERIFIED · LISTEN ONLY');return}await connect('speaker',result.speakerGrant);setVerified(true);await roomRef.current?.localParticipant.setMicrophoneEnabled(true);setMicOn(true);setStatus('YOU’RE SPEAKING')}});client.requestAccessToken({prompt:'consent'})}catch(error){setStatus(error.message||'Verification failed')}}
+  async function toggleMic(){const next=!micOn;await roomRef.current?.localParticipant.setMicrophoneEnabled(next);setMicOn(next);setStatus(next?'YOU’RE SPEAKING':'MIC MUTED')}
+  useEffect(()=>()=>{roomRef.current?.disconnect()},[]);
+  return <section className="lobby-card"><div className="lobby-top"><span><i className="live-dot"/> LIVE AUDIO LOBBY</span><b>{joined?count:'—'} IN ROOM</b></div><div className="wave"><i/><i/><i/><i/><i/><i/><i/></div><h2>FAIRONES LOBBY</h2><p>Listen before the live broadcast. Verified FairOnesLive YouTube subscribers can unlock their microphone and speak.</p><input className="name-input" value={name} maxLength={60} onChange={e=>setName(e.target.value)} aria-label="Display name"/>{!joined&&<button className="gold-button" onClick={joinListener}>JOIN AUDIO LOBBY</button>}{joined&&!verified&&<button className="outline-button" onClick={verifySubscription}>VERIFY SUBSCRIPTION TO SPEAK</button>}{verified&&<button className={`mic-button ${micOn?'active':''}`} onClick={toggleMic}>🎙 {micOn?'MUTE MICROPHONE':'UNMUTE MICROPHONE'}</button>}<small className="lobby-status">{status}</small></section>;
 }
 
-function App() {
-  const [tab, setTab] = useState('HOME');
-  const [reminder, setReminder] = useState(() => localStorage.getItem('fairones-main-event-reminder') === 'set');
-  const [liveModal, setLiveModal] = useState(false);
-  const [eventModal, setEventModal] = useState(null);
-  const [submissionOpen, setSubmissionOpen] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
-  const [passcode, setPasscode] = useState('');
-  const [submissions, setSubmissions] = useState(null);
-  const [notice, setNotice] = useState('');
-
-  function toggleReminder() {
-    const next = !reminder;
-    setReminder(next);
-    localStorage.setItem('fairones-main-event-reminder', next ? 'set' : 'off');
-    setNotice(next ? 'Battle reminder saved on this device.' : 'Battle reminder removed.');
-  }
-
-  async function submitMatch(event) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const response = await fetch('/api/submissions', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.fromEntries(form)),
-    });
-    if (!response.ok) { const err = await response.json().catch(() => ({})); setNotice(err.error || 'Submission could not be sent.'); return; }
-    event.currentTarget.reset();
-    setSubmissionOpen(false);
-    setNotice('Submission received. It is now in the FairOnes Admin Mailbox.');
-  }
-
-  async function loginAdmin(event) {
-    event.preventDefault();
-    const login = await fetch('/api/admin/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ passcode }) });
-    if (!login.ok) { setNotice('Incorrect admin passcode.'); return; }
-    const mailbox = await fetch('/api/admin/submissions');
-    if (mailbox.ok) setSubmissions((await mailbox.json()).submissions || []);
-    setPasscode('');
-  }
-
-  async function updateStatus(id, status) {
-    const response = await fetch('/api/admin/submissions', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, status }) });
-    if (response.ok) setSubmissions((items) => items?.map((item) => item.id === id ? { ...item, status } : item) || []);
-  }
-
-  async function closeAdmin() {
-    setAdminOpen(false); setSubmissions(null); setPasscode('');
-    await fetch('/api/admin/logout', { method: 'POST' }).catch(() => {});
-  }
-
-  return (
-    <main className="site-shell">
-      <header className="topbar">
-        <button className="logo-button" onClick={() => setTab('HOME')} aria-label="FairOnes home"><img src="https://faironeslive.com/fairones/logo.png" alt="FairOnes Live" /></button>
-        <div className="brand-copy"><span>FAIRONES LIVE</span><small>WHERE THINGS GET SETTLED</small></div>
-        <a className="youtube" href="https://www.youtube.com/@FaironesLive" target="_blank" rel="noreferrer">▶</a>
-      </header>
-
-      <section className="content">
-        {tab === 'HOME' && <>
-          <div className="status"><i /> UPCOMING · AUGUST 28, 2026</div>
-          <img className="main-flyer" src="https://faironeslive.com/fairones/home-main-event.jpg" alt="Fuffie Conyers versus BadmanBread rap battle" />
-          <button className={`gold-button ${reminder ? 'confirmed' : ''}`} onClick={toggleReminder}>{reminder ? '✓ REMINDER SET' : 'SET BATTLE REMINDER'}</button>
-          <h2>UPCOMING</h2><div className="event-list">{EVENTS.map((event) => <EventCard key={event.title} event={event} onOpen={setEventModal} />)}</div>
-        </>}
-
-        {tab === 'LIVE' && <section className="panel live-panel">
-          <AudioLobby />
-          <div className="broadcast-divider"><span>MAIN EVENT BROADCAST</span></div>
-          <div className="broadcast-icon">◉</div><h1>FUFFIE <em>VS</em> BADMANBREAD</h1>
-          <p>The secure FairOnes room displays the host camera feed when broadcasting begins.</p>
-          <button className="gold-button enter-live" onClick={() => setLiveModal(true)}>ENTER LIVE ROOM</button>
-        </section>}
-
-        {tab === 'COMPETE' && <section className="panel"><span className="eyebrow">YOUR MATCH. YOUR TERMS.</span><h1>COMPETE</h1><div className="feature-icon">♛</div><h3>SUBMIT A MATCH</h3><p>Rap battle, basketball, chess, debate, or another one-on-one challenge. FairOnes reviews every matchup before scheduling.</p><button className="gold-button" onClick={() => setSubmissionOpen(true)}>START SUBMISSION</button></section>}
-
-        {tab === 'SCHEDULE' && <section className="panel"><span className="eyebrow">SAVE THE DATE</span><h1>SCHEDULE</h1><div className="event-list">{EVENTS.map((event) => <EventCard key={event.title} event={event} onOpen={setEventModal} />)}</div></section>}
-
-        {tab === 'PROFILE' && <section className="panel"><span className="eyebrow">OFFICIAL CHANNEL</span><h1>FAIRONES LIVE</h1><img className="profile-logo" src="https://faironeslive.com/fairones/logo.png" alt=""/><h3>WATCH THE ARCHIVE</h3><p>Full battles, event replays, trailers, and official FairOnes releases.</p><a className="gold-button link-button" href="https://www.youtube.com/@FaironesLive" target="_blank" rel="noreferrer">OPEN YOUTUBE</a><button className="admin-button" onClick={() => setAdminOpen(true)}>ADMIN MAILBOX</button></section>}
-      </section>
-
-      <nav className="bottom-nav" aria-label="Primary navigation">{['HOME','LIVE','COMPETE','SCHEDULE','PROFILE'].map((item) => <button key={item} className={tab === item ? 'active' : ''} onClick={() => setTab(item)}><span>{item==='HOME'?'◆':item==='LIVE'?'●':item==='COMPETE'?'♛':item==='SCHEDULE'?'▣':'◉'}</span>{item}</button>)}</nav>
-
-      {liveModal && <div className="modal" role="dialog" aria-modal="true"><img src="https://faironeslive.com/fairones/home-main-event.jpg" alt=""/><div className="modal-shade"/><button className="close" onClick={() => setLiveModal(false)}>×</button><div className="modal-copy"><div className="status"><i/> BROADCAST STANDBY</div><h1>FAIRONES LIVE ROOM</h1><p>The event artwork will be replaced by the secure video broadcast when the host goes live.</p></div></div>}
-
-      {eventModal && <div className="dialog-backdrop"><section className="dialog-card"><button className="dialog-close" onClick={() => setEventModal(null)}>×</button><img src={`https://faironeslive.com${eventModal.image}`} alt=""/><span className="eyebrow">{eventModal.category}</span><h3>{eventModal.title}</h3><p>{eventModal.date}</p><button className="gold-button" onClick={() => { setEventModal(null); setNotice('Event saved for your current FairOnes session.'); }}>SAVE EVENT</button></section></div>}
-
-      {submissionOpen && <div className="dialog-backdrop"><form className="dialog-card submission-form" onSubmit={submitMatch}><button type="button" className="dialog-close" onClick={() => setSubmissionOpen(false)}>×</button><span className="eyebrow">FAIRONES MATCH REQUEST</span><h3>SUBMIT A MATCH</h3><label>Your name<input name="name" required /></label><label>Email or phone<input name="contact" required /></label><label>Match type<select name="type"><option>Rap Battle</option><option>Basketball</option><option>Chess</option><option>Debate</option><option>Other</option></select></label><label>Opponent and details<textarea name="details" rows="4" required /></label><button className="gold-button" type="submit">SEND SUBMISSION</button></form></div>}
-
-      {adminOpen && <div className="dialog-backdrop"><section className="dialog-card mailbox"><button className="dialog-close" onClick={closeAdmin}>×</button><span className="eyebrow">PRIVATE ADMIN</span><h3>SUBMISSION MAILBOX</h3>{submissions === null ? <form className="submission-form" onSubmit={loginAdmin}><p>Enter the admin passcode to view private submissions.</p><label>Admin passcode<input type="password" value={passcode} onChange={(e) => setPasscode(e.target.value)} required autoFocus /></label><button className="gold-button" type="submit">UNLOCK MAILBOX</button></form> : <><div className="mailbox-count">{submissions.filter((item) => item.status === 'new').length} NEW · {submissions.length} TOTAL</div>{submissions.length === 0 ? <p>No submissions yet.</p> : <div className="mail-list">{submissions.map((item) => <article className="mail-item" key={item.id}><div className="mail-head"><b>{item.matchType || item.type}</b><span className={`mail-status ${item.status}`}>{item.status}</span></div><strong>{item.name}</strong><a href={`mailto:${item.contact}`}>{item.contact}</a><p>{item.details}</p><small>{new Date(item.createdAt).toLocaleString()}</small><label>Status<select value={item.status} onChange={(e) => updateStatus(item.id, e.target.value)}><option value="new">New</option><option value="reviewed">Reviewed</option><option value="approved">Approved</option><option value="declined">Declined</option></select></label></article>)}</div>}</>}</section></div>}
-
-      {notice && <button className="notice" onClick={() => setNotice('')}>{notice}<b>×</b></button>}
-    </main>
-  );
+function FeaturedArtist({ featured, onBack }) {
+  return <section className="featured-page"><button className="featured-back" onClick={onBack}>‹ BACK HOME</button><span className="eyebrow">{featured.eyebrow}</span><h1>{featured.title}</h1><div className="featured-hero"><div className="featured-glow"/><img src={featured.imageUrl} alt={featured.name}/></div><span className="featured-badge">★ FEATURED</span><h2>{featured.name}</h2><p>{featured.bio}</p>{featured.primaryUrl&&<a className="gold-button link-button" href={featured.primaryUrl} target="_blank" rel="noreferrer">{featured.primaryLabel}</a>}</section>;
 }
 
-createRoot(document.getElementById('root')).render(<App />);
+function App(){
+ const [tab,setTab]=useState('HOME'),[featuredOpen,setFeaturedOpen]=useState(false),[featured,setFeatured]=useState(DEFAULT_FEATURED),[reminder,setReminder]=useState(()=>localStorage.getItem('fairones-main-event-reminder')==='set'),[liveModal,setLiveModal]=useState(false),[eventModal,setEventModal]=useState(null),[submissionOpen,setSubmissionOpen]=useState(false),[adminOpen,setAdminOpen]=useState(false),[passcode,setPasscode]=useState(''),[submissions,setSubmissions]=useState(null),[notice,setNotice]=useState('');
+ useEffect(()=>{try{const saved=JSON.parse(localStorage.getItem('fairones-featured-artist')||'null');if(saved)setFeatured({...DEFAULT_FEATURED,...saved})}catch{}},[]);
+ function toggleReminder(){const next=!reminder;setReminder(next);localStorage.setItem('fairones-main-event-reminder',next?'set':'off');setNotice(next?'Battle reminder saved on this device.':'Battle reminder removed.')}
+ async function submitMatch(event){event.preventDefault();const form=new FormData(event.currentTarget);const response=await fetch('/api/submissions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(form))});if(!response.ok){const err=await response.json().catch(()=>({}));setNotice(err.error||'Submission could not be sent.');return}event.currentTarget.reset();setSubmissionOpen(false);setNotice('Submission received. It is now in the FairOnes Admin Mailbox.')}
+ async function loginAdmin(event){event.preventDefault();const login=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({passcode})});if(!login.ok){setNotice('Incorrect admin passcode.');return}const mailbox=await fetch('/api/admin/submissions');if(mailbox.ok)setSubmissions((await mailbox.json()).submissions||[]);setPasscode('')}
+ async function updateStatus(id,status){const response=await fetch('/api/admin/submissions',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({id,status})});if(response.ok)setSubmissions(items=>items?.map(item=>item.id===id?{...item,status}:item)||[])}
+ async function closeAdmin(){setAdminOpen(false);setSubmissions(null);setPasscode('');await fetch('/api/admin/logout',{method:'POST'}).catch(()=>{})}
+ return <main className="site-shell"><header className="topbar"><button className="logo-button" onClick={()=>{setFeaturedOpen(false);setTab('HOME')}} aria-label="FairOnes home"><img src="https://faironeslive.com/fairones/logo.png" alt="FairOnes Live"/></button><div className="brand-copy"><span>FAIRONES LIVE</span><small>WHERE THINGS GET SETTLED</small></div><a className="youtube" href="https://www.youtube.com/@FaironesLive" target="_blank" rel="noreferrer">▶</a></header><section className="content">
+ {featuredOpen?<FeaturedArtist featured={featured} onBack={()=>setFeaturedOpen(false)}/>:<>
+ {tab==='HOME'&&<><div className="home-feature-row"><div className="status"><i/> UPCOMING · AUGUST 28, 2026</div><button className="featured-trigger" onClick={()=>setFeaturedOpen(true)} aria-label="Open Featured Artist"><span className="featured-pulse"/><img src="https://faironeslive.com/fairones/logo.png" alt=""/><b>FEATURED</b></button></div><img className="main-flyer" src="https://faironeslive.com/fairones/home-main-event.jpg" alt="Fuffie Conyers versus BadmanBread rap battle"/><button className={`gold-button ${reminder?'confirmed':''}`} onClick={toggleReminder}>{reminder?'✓ REMINDER SET':'SET BATTLE REMINDER'}</button><h2>UPCOMING</h2><div className="event-list">{EVENTS.map(event=><EventCard key={event.title} event={event} onOpen={setEventModal}/>)}</div></>}
+ {tab==='LIVE'&&<section className="panel live-panel"><AudioLobby/><div className="broadcast-divider"><span>MAIN EVENT BROADCAST</span></div><div className="broadcast-icon">◉</div><h1>FUFFIE <em>VS</em> BADMANBREAD</h1><p>The secure FairOnes room displays the host camera feed when broadcasting begins.</p><button className="gold-button enter-live" onClick={()=>setLiveModal(true)}>ENTER LIVE ROOM</button></section>}
+ {tab==='COMPETE'&&<section className="panel"><span className="eyebrow">YOUR MATCH. YOUR TERMS.</span><h1>COMPETE</h1><div className="feature-icon">♛</div><h3>SUBMIT A MATCH</h3><p>Rap battle, basketball, chess, debate, or another one-on-one challenge. FairOnes reviews every matchup before scheduling.</p><button className="gold-button" onClick={()=>setSubmissionOpen(true)}>START SUBMISSION</button></section>}
+ {tab==='SCHEDULE'&&<section className="panel"><span className="eyebrow">SAVE THE DATE</span><h1>SCHEDULE</h1><div className="event-list">{EVENTS.map(event=><EventCard key={event.title} event={event} onOpen={setEventModal}/>)}</div></section>}
+ {tab==='PROFILE'&&<section className="panel"><span className="eyebrow">OFFICIAL CHANNEL</span><h1>FAIRONES LIVE</h1><img className="profile-logo" src="https://faironeslive.com/fairones/logo.png" alt=""/><h3>WATCH THE ARCHIVE</h3><p>Full battles, event replays, trailers, and official FairOnes releases.</p><a className="gold-button link-button" href="https://www.youtube.com/@FaironesLive" target="_blank" rel="noreferrer">OPEN YOUTUBE</a><button className="admin-button" onClick={()=>setAdminOpen(true)}>ADMIN MAILBOX</button></section>}
+ </>}</section><nav className="bottom-nav" aria-label="Primary navigation">{['HOME','LIVE','COMPETE','SCHEDULE','PROFILE'].map(item=><button key={item} className={!featuredOpen&&tab===item?'active':''} onClick={()=>{setFeaturedOpen(false);setTab(item)}}><span>{item==='HOME'?'◆':item==='LIVE'?'●':item==='COMPETE'?'♛':item==='SCHEDULE'?'▣':'◉'}</span>{item}</button>)}</nav>
+ {liveModal&&<div className="modal" role="dialog" aria-modal="true"><img src="https://faironeslive.com/fairones/home-main-event.jpg" alt=""/><div className="modal-shade"/><button className="close" onClick={()=>setLiveModal(false)}>×</button><div className="modal-copy"><div className="status"><i/> BROADCAST STANDBY</div><h1>FAIRONES LIVE ROOM</h1><p>The event artwork will be replaced by the secure video broadcast when the host goes live.</p></div></div>}
+ {eventModal&&<div className="dialog-backdrop"><section className="dialog-card"><button className="dialog-close" onClick={()=>setEventModal(null)}>×</button><img src={`https://faironeslive.com${eventModal.image}`} alt=""/><span className="eyebrow">{eventModal.category}</span><h3>{eventModal.title}</h3><p>{eventModal.date}</p><button className="gold-button" onClick={()=>{setEventModal(null);setNotice('Event saved for your current FairOnes session.')}}>SAVE EVENT</button></section></div>}
+ {submissionOpen&&<div className="dialog-backdrop"><form className="dialog-card submission-form" onSubmit={submitMatch}><button type="button" className="dialog-close" onClick={()=>setSubmissionOpen(false)}>×</button><span className="eyebrow">FAIRONES MATCH REQUEST</span><h3>SUBMIT A MATCH</h3><label>Your name<input name="name" required/></label><label>Email or phone<input name="contact" required/></label><label>Match type<select name="type"><option>Rap Battle</option><option>Basketball</option><option>Chess</option><option>Debate</option><option>Other</option></select></label><label>Opponent and details<textarea name="details" rows="4" required/></label><button className="gold-button" type="submit">SEND SUBMISSION</button></form></div>}
+ {adminOpen&&<div className="dialog-backdrop"><section className="dialog-card mailbox"><button className="dialog-close" onClick={closeAdmin}>×</button><span className="eyebrow">PRIVATE ADMIN</span><h3>SUBMISSION MAILBOX</h3>{submissions===null?<form className="submission-form" onSubmit={loginAdmin}><p>Enter the admin passcode to view private submissions.</p><label>Admin passcode<input type="password" value={passcode} onChange={e=>setPasscode(e.target.value)} required autoFocus/></label><button className="gold-button" type="submit">UNLOCK MAILBOX</button></form>:<><div className="mailbox-count">{submissions.filter(item=>item.status==='new').length} NEW · {submissions.length} TOTAL</div>{submissions.length===0?<p>No submissions yet.</p>:<div className="mail-list">{submissions.map(item=><article className="mail-item" key={item.id}><div className="mail-head"><b>{item.matchType||item.type}</b><span className={`mail-status ${item.status}`}>{item.status}</span></div><strong>{item.name}</strong><a href={`mailto:${item.contact}`}>{item.contact}</a><p>{item.details}</p><small>{new Date(item.createdAt).toLocaleString()}</small><label>Status<select value={item.status} onChange={e=>updateStatus(item.id,e.target.value)}><option value="new">New</option><option value="reviewed">Reviewed</option><option value="approved">Approved</option><option value="declined">Declined</option></select></label></article>)}</div>}</>}</section></div>}
+ {notice&&<button className="notice" onClick={()=>setNotice('')}>{notice}<b>×</b></button>}</main>;
+}
+createRoot(document.getElementById('root')).render(<App/>);
