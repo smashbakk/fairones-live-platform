@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 
+// CORS supports localhost preview plus both FairOnes production origins.
 function corsHeaders(request: HttpRequest): Record<string, string> {
   const origin = request.headers.get('origin')?.trim() || '';
   const allowedOrigins = (process.env.FAIRONES_ALLOWED_ORIGIN || '')
